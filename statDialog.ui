@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>StatisticDialog</class>
+ <widget class="QDialog" name="StatisticDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>400</width>
+    <height>206</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Statistics</string>
+  </property>
+  <property name="windowIcon">
+   <iconset theme="accessories-calculator"/>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="5" column="1">
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="1">
+    <widget class="QLineEdit" name="textLabelB"/>
+   </item>
+   <item row="2" column="0">
+    <widget class="QLabel" name="label">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="font">
+      <font>
+       <family>Lato</family>
+       <pointsize>14</pointsize>
+       <weight>75</weight>
+       <italic>false</italic>
+       <bold>true</bold>
+       <underline>false</underline>
+      </font>
+     </property>
+     <property name="layoutDirection">
+      <enum>Qt::LeftToRight</enum>
+     </property>
+     <property name="text">
+      <string>Label A</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="1">
+    <widget class="QLabel" name="label_2">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="font">
+      <font>
+       <family>Lato</family>
+       <pointsize>14</pointsize>
+       <weight>75</weight>
+       <italic>false</italic>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>Label B</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="0">
+    <widget class="QLineEdit" name="textLabelA"/>
+   </item>
+   <item row="1" column="0" colspan="2">
+    <widget class="QLabel" name="label_3">
+     <property name="font">
+      <font>
+       <pointsize>14</pointsize>
+       <weight>75</weight>
+       <italic>true</italic>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>Insert the two Labels for which the statistics are shown</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>StatisticDialog</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>248</x>
+     <y>254</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>157</x>
+     <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>StatisticDialog</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>316</x>
+     <y>260</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>286</x>
+     <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>
