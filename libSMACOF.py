@@ -113,7 +113,6 @@ class SMACOF():
         distZ = distX
         B = np.zeros(distZ.shape)
 
-        print(0)
 
         iter=1
 
@@ -131,7 +130,6 @@ class SMACOF():
 
             iter+=1
 
-        print(iter)
 
         return (X)
 
@@ -143,7 +141,3 @@ def mds(data):
     smacof= SMACOF(data, 2)
     return smacof.solve(data)
 
-
-cube = np.array([[0,0,0], [0,0,1], [0,1,0], [0,1,1],[1,0,0],[1,0,1], [1,1,0], [1,1,1]]).astype(np.float)
-smacof = SMACOF(cube)
-print(smacof.calcDist(cube))

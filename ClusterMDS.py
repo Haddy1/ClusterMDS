@@ -153,6 +153,9 @@ class Main(QMainWindow, Ui_MainWindow):
         self.data = data
         self.label_indices = labels
 
+
+        print (data.shape)
+
         #remember the file name, so that we can later use it as title for the plot
         #only one file
         if nr_labels == 1:

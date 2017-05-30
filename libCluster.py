@@ -134,7 +134,6 @@ def calcMeanDist(index_list, dist_matrix):
             dist_matrix_rows = dist_matrix[indicesA]
             mean = dist_matrix_rows[:,indicesB].mean()
             mean_dist_matrix[labelA,labelB] = dist_matrix_rows[:,indicesB].mean()
-#    print (mean_dist_matrix)
 
     return mean_dist_matrix
 
