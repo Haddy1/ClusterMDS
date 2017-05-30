@@ -14,25 +14,24 @@ class SMACOF():
     fstep = None
     floop = None
 
-    def __init__(self, data, n_components = 2, maxiter = 10000, mode='all', distance='fast'):
+    def __init__(self, data, n_components = 2, maxiter = 10000, mode='all', floatX='float32'):
+        theano.config.floatX = floatX
         self.n_components = n_components
         self.maxiter = 10000
         self.mode = mode
-        print ("H")
-        self.initTheano(distance)
+        self.initTheano()
         self.delta = self.fdist(data)
-        print ("O")
         self.size_inv = 1.0 / data.shape[0]
 
-    def initTheano(self, distance='fast'):
-        X = T.fmatrix()
-        dist = T.fmatrix()
+    def initTheano(self):
+        X = T.matrix()
+        dist = T.matrix()
         dist = self.calcDist(X)
         self.fdist = theano.function(inputs=[X], outputs = dist, allow_input_downcast=True)
 
-        distX = T.fmatrix()
-        delta = T.fmatrix()
-        s = T.fscalar()
+        distX = T.matrix()
+        delta = T.matrix()
+        s = T.scalar()
         s = self.sigma(distX, delta)
         self.fsigma = theano.function(inputs=[distX, delta], outputs = s, allow_input_downcast=True)
 
@@ -42,33 +41,53 @@ class SMACOF():
             self.init_step()
 
     def init_step(self):
-        Z = T.fmatrix()
-        distZ = T.fmatrix()
-        delta = T.fmatrix()
-        size_inv = T.fscalar()
-        X = T.fmatrix()
-        distX = T.fmatrix()
-        s = T.fscalar()
-        s_old = T.fscalar()
+        Z = T.matrix()
+        distZ = T.matrix()
+        delta = T.matrix()
+        size_inv = T.scalar()
+        X = T.matrix()
+        distX = T.matrix()
+        s = T.scalar()
+        s_old = T.scalar()
         X, distX, s = self.step(Z, distZ, s_old, delta, size_inv)
 
         self.fstep = theano.function(inputs=[Z, distZ, delta, size_inv], outputs=[X, distX, s], allow_input_downcast=True)
+    def step(self, Z, distZ, s_old, delta, size_inv):
+
+        #update X
+        X = self.guttmanTrans(Z, distZ, delta, size_inv)
+        distX = self.calcDist(X)
+        dist_norm = T.sqrt((X**2).sum(axis=1)).sum()
+        s = self.sigma(distX, delta) / dist_norm
+
+        return X, distX, s
 
     def init_loop(self):
-        Z = T.fmatrix()
-        distZ = T.fmatrix()
-        delta = T.fmatrix()
-        size_inv = T.fscalar()
-        X = T.fmatrix()
-        distX = T.fmatrix()
-        s = T.fscalar()
-        s_old = T.fscalar()
-        eps = T.fscalar()
-        it = T.fscalar()
+        Z = T.matrix()
+        distZ = T.matrix()
+        delta = T.matrix()
+        size_inv = T.scalar()
+        X = T.matrix()
+        distX = T.matrix()
+        s = T.scalar()
+        s_old = T.scalar()
+        eps = T.scalar()
 
-        ([X, distX, s, i]), updates = theano.scan(fn = self.loop_step, outputs_info= [Z, distZ, s_old,None], non_sequences = [delta, size_inv, eps], n_steps=self.maxiter)
-        it = i
-        self.floop= theano.function(inputs=[Z, distZ, s_old, delta, size_inv, eps], outputs=[X[-1], it], allow_input_downcast=True)
+        ([X, distX, s]), updates = theano.scan(fn = self.loop_step, outputs_info= [Z, distZ, s_old], non_sequences = [delta, size_inv, eps], n_steps=self.maxiter)
+        self.floop= theano.function(inputs=[Z, distZ, s_old, delta, size_inv, eps], outputs=[X[-1]], allow_input_downcast=True)
+
+    def loop_step(self, Z, distZ, s_old, delta, size_inv, eps):
+
+            #update X
+            X = self.guttmanTrans(Z, distZ, delta, size_inv)
+            distX = self.calcDist(X)
+            dist_norm = T.sqrt((X**2).sum(axis=1)).sum()
+            s = self.sigma(distX, delta) / dist_norm
+            s_diff = s_old - s
+            condition = T.lt(s_diff, eps)
+            until = theano.scan_module.until(condition)
+
+            return [X, distX, s], until
 
     def getInitValues(self, data):
         n_init = 4
@@ -127,28 +146,6 @@ class SMACOF():
         X = size_inv* T.dot(self.bCalc(distX, delta), Z)
         return X
 
-    def step(self, Z, distZ, s_old, delta, size_inv):
-
-            #update X
-            X = self.guttmanTrans(Z, distZ, delta, size_inv)
-            distX = self.calcDist(X)
-            dist_norm = T.sqrt((X**2).sum(axis=1)).sum()
-            s = self.sigma(distX, delta) / dist_norm
-
-            return X, distX, s
-    def loop_step(self, Z, distZ, s_old, delta, size_inv, eps):
-
-            #update X
-            X = self.guttmanTrans(Z, distZ, delta, size_inv)
-            distX = self.calcDist(X)
-            dist_norm = T.sqrt((X**2).sum(axis=1)).sum()
-            s = self.sigma(distX, delta) / dist_norm
-            s_diff = s_old - s
-            it = s_old
-            condition = T.lt(s_diff, eps)
-            until = theano.scan_module.until(condition)
-
-            return [X, distX, s, it], until
 
 
     def solve(self, data, initX = None, eps = 1e-6):
@@ -169,7 +166,7 @@ class SMACOF():
 
         #theano handling iteration
         if self.mode == 'all':
-            [X, it] = self.floop(Z, distZ,s, self.delta, self.size_inv, eps)
+            X = self.floop(Z, distZ, s, self.delta, self.size_inv, eps)[-1]
 
         else:
             #theano function executed each iteration step

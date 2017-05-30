@@ -239,11 +239,11 @@ class Main(QMainWindow, Ui_MainWindow):
         self.progressBar.setRange(0,0)
 
         start = self.options.offset_start
-        end= self.options.offset_end
+        end = self.options.offset_end
 
 
         #spawn new thread and register return signal
-        self.calc_thread = WorkerThread(data[start:-1 -end, :])
+        self.calc_thread = WorkerThread(data[start:len(data)-end, :])
         self.calc_thread.finished.connect(self.callbackFunction)
         self.calc_thread.exception.connect(self.mdsException)
         self.calc_thread.start()
@@ -434,11 +434,11 @@ class Main(QMainWindow, Ui_MainWindow):
         end = self.options.offset_end
 
         self.mds_data = mds_data
-        clusters_orig = libCluster.labelPoints(self.data[start:-end], self.label_indices[start:-end])
-        self.distance_matrix= libCluster.calcDistMatrix(clusters_orig)
+        clusters_orig = libCluster.labelPoints(self.data[start:len(self.data)-end], self.label_indices[start:len(self.label_indices)-end])
+        self.distance_matrix = libCluster.calcDistMatrix(clusters_orig)
 
         if self.label_indices:
-            self.clusters = libCluster.labelPoints(mds_data, self.label_indices[start:-end])
+            self.clusters = libCluster.labelPoints(mds_data, self.label_indices[start:len(self.label_indices)-end])
             self.plotLabel(self.clusters)
         else:
             label_indices = libCluster.automaticLabeling(mds_data, 5)
@@ -529,11 +529,11 @@ class Main(QMainWindow, Ui_MainWindow):
             if rotate:
                 self.unrotated_mds_data = self.mds_data
                 self.mds_data = libMDS.pca(self.mds_data, 2)
-                self.clusters = libCluster.labelPoints(self.mds_data, self.label_indices[start:-end])
+                self.clusters = libCluster.labelPoints(self.mds_data, self.label_indices[start:len(self.label_indices)-end])
             elif self.unrotated_mds_data is not None:
                 self.mds_data = self.unrotated_mds_data
                 self.unrotated_mds_data = None
-                self.clusters = libCluster.labelPoints(self.mds_data, self.label_indices[start:-end])
+                self.clusters = libCluster.labelPoints(self.mds_data, self.label_indices[start:len(self.label_indices)-end])
             self.rmmpl()
             self.plotLabel(self.clusters)
 
@@ -559,8 +559,8 @@ class Main(QMainWindow, Ui_MainWindow):
             self.errDialog("timestamp exceeds nr of points")
             return
         self.rmmpl()
-        self.data = self.data[start:-end]
-        self.label_indices = self.label_indices[start:-end]
+        self.data = self.data[start:len(self.data) - end]
+        self.label_indices = self.label_indices[start:len(self.label_indices)-end]
         self.time_offset = start
         self.calcMDS(self.data)
 
@@ -608,6 +608,7 @@ class WorkerThread(QtCore.QThread):
         except:
             self.exception.emit("MDS transformation failed")
             self.exit()
+
 
         #send calculated data back to main thread
         self.finished.emit(mds_data)
