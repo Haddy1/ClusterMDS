@@ -2,36 +2,26 @@
 from __future__ import print_function
 
 import numpy as np
-import scipy
-import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
 
 import theano
 import theano.tensor as T
-from theano.compile.debugmode import DebugMode
-
-#Principal component analysis
-def pca(data, n_components = 2):
-    pca = PCA(n_components= n_components)
-    return (pca.fit(data).transform(data))
-
-def mds(data):
-    smacof= SMACOF(data, 2)
-    return smacof.solve(data)
 
 #Multidimensional Scaling using the "Scaling by MAjorizing a COmplicated Function" (SMACOF) alghorithm (Borg, I.; Groenen, P. (1997), Modern Multidimensional Scaling: theory and applications, New York: Springer-Verlag.)
 class SMACOF():
     maxiter = 10000
     mode = 'all'
-    self.fstep = None
-    self.floop = None
+    fstep = None
+    floop = None
 
     def __init__(self, data, n_components = 2, maxiter = 10000, mode='all', distance='fast'):
         self.n_components = n_components
         self.maxiter = 10000
         self.mode = mode
+        print ("H")
         self.initTheano(distance)
         self.delta = self.fdist(data)
+        print ("O")
         self.size_inv = 1.0 / data.shape[0]
 
     def initTheano(self, distance='fast'):

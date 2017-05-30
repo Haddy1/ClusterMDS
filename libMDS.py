@@ -1,7 +1,5 @@
 #!/usr/bin/python
 from sklearn.decomposition import PCA
-import numpy as np
-import scipy
 import imp
 try:
     imp.find_module('theano')
@@ -11,8 +9,9 @@ except ImportError:
 
 if use_theano:
     from libSMACOF_theano import SMACOF
-else:
-    from libSMACOF import SMACOF
+    print("Using Theano")
+#else:
+#    from libSMACOF import SMACOF
 
 #Principal component analysis
 def pca(data, n_components = 2):
@@ -20,6 +19,10 @@ def pca(data, n_components = 2):
     return (pca.fit(data).transform(data))
 
 def mds(data):
-    smacof= SMACOF(data, 2)
-    return smacof.solve(data)
+    print("hallo")
+    smacof = SMACOF(data, 2)
+    mds_data = smacof.solve(data)
+    print("bla")
+    print(mds_data.shape)
+    return mds_data
 

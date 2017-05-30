@@ -154,7 +154,6 @@ class Main(QMainWindow, Ui_MainWindow):
         self.label_indices = labels
 
 
-        print (data.shape)
 
         #remember the file name, so that we can later use it as title for the plot
         #only one file
@@ -242,8 +241,9 @@ class Main(QMainWindow, Ui_MainWindow):
         start = self.options.offset_start
         end= self.options.offset_end
 
+
         #spawn new thread and register return signal
-        self.calc_thread = WorkerThread(data[start:-end])
+        self.calc_thread = WorkerThread(data[start:-1 -end, :])
         self.calc_thread.finished.connect(self.callbackFunction)
         self.calc_thread.exception.connect(self.mdsException)
         self.calc_thread.start()
