@@ -4,8 +4,8 @@ from PyQt5.QtCore import QObject
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import *
 import scipy
-from libCluster import *
-from libDistanceMatrix import DistanceMatrix
+from .libCluster import *
+from .libDistanceMatrix import DistanceMatrix
 from matplotlib.figure import Figure
 
 class Statistic(QFrame):
@@ -39,6 +39,8 @@ class Statistic(QFrame):
         self.permutations = options.permutations
         self.options = options
         self.initUi()
+
+        print (self.permutations)
         self.startCalculation()
 
     def startCalculation(self):

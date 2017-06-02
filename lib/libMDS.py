@@ -12,10 +12,10 @@ except ImportError:
 #use SMACOF from libSMACOF_theano when Theano avalailable
 #from numpy implemention from libSMACOF when not
 if use_theano:
-    from libSMACOF_theano import SMACOF
+    from .libSMACOF_theano import SMACOF
     print("Using Theano")
 else:
-    from libSMACOF import SMACOF
+    from .libSMACOF import SMACOF
 
 
 #Principal component analysis

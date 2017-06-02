@@ -4,7 +4,7 @@ import scipy
 from sklearn.cluster import KMeans
 import collections
 
-from libDistanceMatrix import DistanceMatrix
+from .libDistanceMatrix import DistanceMatrix
 
 
 def labelPoints(points, label_indices):
