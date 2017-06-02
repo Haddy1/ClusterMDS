@@ -304,7 +304,6 @@ class StatisticThread(QtCore.QThread):
             """
 
         assert len(labels) > 0, "No labels were selected"
-        permutations = 1
 
 
         index_list = getIndexList(labels, distance_matrix.labels)
