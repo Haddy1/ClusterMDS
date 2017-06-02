@@ -22,9 +22,9 @@ Ui_MainWindow, QMainWindow = loadUiType('window.ui')
 Ui_Options, QOptions= loadUiType('options.ui')
 
 
-import lib.libMDS
-import lib.libCluster
-import lib.libStatistic
+from lib import libMDS
+from lib import libCluster
+from lib import libStatistic
 from lib.libDistanceMatrix import DistanceMatrix
 from scipy.spatial.distance import cdist
 
