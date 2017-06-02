@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 import numpy as np
 import sys
 import os
@@ -21,16 +21,35 @@ from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanva
 Ui_MainWindow, QMainWindow = loadUiType('window.ui')
 Ui_Options, QOptions= loadUiType('options.ui')
 
-import libMDS
-import libCluster
-import libStatistic
-from libDistanceMatrix import DistanceMatrix
+
+import lib.libMDS
+import lib.libCluster
+import lib.libStatistic
+from lib.libDistanceMatrix import DistanceMatrix
 from scipy.spatial.distance import cdist
 
 
 #This File contains all the UI stuff.
 
 class Main(QMainWindow, Ui_MainWindow):
+    """
+    Main Window
+
+    Attributes
+    ----------
+    data: array-like
+        input array of high dimensional data points
+    distance_matrix: DistanceMatrix
+        Distance Matrix of high dimensional input data
+    mds_data:array-like
+        Multidimensional Scaled low dimensional data
+    clusters: dictionary
+        contains mds_data split into labeled clusters
+    markersize: float
+        render size of plotted points
+    """
+
+
     markersize = 6.5 # standard marker size
     annotated_point = None #current shown annotation for point [xy, annotation]
     selected_labels = [] #labels, for the currently selected clusters
@@ -52,6 +71,7 @@ class Main(QMainWindow, Ui_MainWindow):
         self.setupUi(self)
         self.options = Options()
         self.options.doRotation.connect(self.doRotation)
+        self.options.doRecalculate.connect(self.Recalculate)
         self.initUI()
 
     def initUI(self):
@@ -75,9 +95,6 @@ class Main(QMainWindow, Ui_MainWindow):
         self.labelButton= QAction('Load Label', self, enabled=False)
         self.labelButton.setStatusTip('load label data')
         self.labelButton.triggered.connect(self.loadLabels)
-        self.onoffButton= QAction('OnOff Times', self, enabled=False)
-        self.onoffButton.setStatusTip('discard timestamps')
-        self.onoffButton.triggered.connect(self.remove_timestamps)
         self.deleteButton =  QAction('Delete Cluster', self, enabled=False)
         self.deleteButton.triggered.connect(self.deleteCluster)
 
@@ -86,7 +103,6 @@ class Main(QMainWindow, Ui_MainWindow):
         self.toolbar.addAction(optionsButton)
         self.toolbar.addAction(self.statisticButton)
         self.toolbar.addAction(self.labelButton)
-        self.toolbar.addAction(self.onoffButton)
         self.toolbar.addAction(self.deleteButton)
 
     #opens a Message Box with an error message
@@ -132,7 +148,12 @@ class Main(QMainWindow, Ui_MainWindow):
             try:
                 cluster = np.loadtxt(filename)
             except IOError:
+                self.errDialog("Could not read " + filename)
                 continue
+            except:
+                self.errDialog(filename + " is not a valid input file")
+                continue
+
             if nr_labels == 0:
                 data = cluster
             else:
@@ -171,7 +192,7 @@ class Main(QMainWindow, Ui_MainWindow):
             self.rmmpl()
 
         #start calculating
-        self.mds_data = self.calcMDS(self.data)
+        self.calcMDS(self.data)
 
 
 
@@ -182,15 +203,16 @@ class Main(QMainWindow, Ui_MainWindow):
         """
         dirname = QFileDialog.getExistingDirectory(self, 'Save File', os.getenv('HOME'))
 
-        assert self.clusters and self.mds_data, "Trying to save empty data"
+
+        #assert self.clusters != None and self.mds_data != None, "Trying to save empty data"
 
         #first save all points in single file
-        np.savetxt(dirname + '/' + MDS_all-clusters.txt, self.mds_data)
+        np.savetxt(dirname + '/' + 'MDS_all-clusters.txt', self.mds_data)
         #then create a file for each cluster
         for label, cluster in self.clusters.items():
             try:
                 np.savetxt(str(dirname + '/' + label + "_MDS.txt"), cluster)
-            except IOError:
+            except:
                 self.errDialog(str(label + "Could not be saved"))
 
     #loads a file containing the labels corresponding to the data points
@@ -198,7 +220,7 @@ class Main(QMainWindow, Ui_MainWindow):
         """
         loads a file containing the labels corresponding to the data points
         """
-        if not self.clusters:
+        if self.clusters is None:
             self.errDialog("Please open datafile first")
 
         filename, _ = QFileDialog.getOpenFileName(self, 'Open File', os.getenv('HOME'))
@@ -211,12 +233,17 @@ class Main(QMainWindow, Ui_MainWindow):
 
 
         if len(labels) != self.mds_data.shape[0]:
-            self.errDialog("number of labels dies not equal the number of points")
+            self.errDialog("number of labels does not equal the number of points")
             return
 
         self.label_indices = labels
         #relabel points
-        self.clusters = libCluster.labelPoints(self.mds_data, self.label_indices)
+        start = self.options.offset_start
+        end = self.options.offset_end
+        self.clusters = libCluster.labelPoints(self.mds_data[start:len(self.mds_data)-end], self.label_indices[start:len(self.label_indices)-end])
+
+        clusters_orig = libCluster.labelPoints(self.data[start:len(self.data)-end], self.label_indices[start:len(self.label_indices)-end])
+        self.distance_matrix = libCluster.calcDistMatrix(clusters_orig)
 
         #replot
         self.rmmpl()
@@ -224,6 +251,13 @@ class Main(QMainWindow, Ui_MainWindow):
 
     #spawns the thread used for mds calculation
     def calcMDS(self, data):
+        """ Spawns thread used for mds calculation
+        and displays progress bar
+        Parameters
+        ----------
+        data: array-like
+            high dimensional data to be transformed
+        """
 
         if data.shape[0] < 1:
             self.errDialog("Input Data does not contain any points")
@@ -251,17 +285,22 @@ class Main(QMainWindow, Ui_MainWindow):
 
     #creates the plot showing the scatter image of the mds transformed data
     def plotLabel(self, clusters):
+        """
+            plots clusters as scatter plot
+
+        Parameters
+        ---------
+        clusters: dictionary
+            Contains the labeled low dimensional data points
+
+        """
         fig1 = Figure()
         ax1f1 = fig1.add_subplot(111)
         self.ax1f1 = ax1f1
         main.addmpl(fig1)
 
         self.statisticButton.setEnabled(True)
-        self.onoffButton.setEnabled(True)
         self.labelButton.setEnabled(True)
-
-
-
 
         #plot the clusters
         legend = []
@@ -297,8 +336,12 @@ class Main(QMainWindow, Ui_MainWindow):
 
 
 
-    #on click on data point, highlight all points in the same cluster and insert the label in selected_labels list
     def onPick(self, event):
+        """
+        event handler for point selection
+
+        on click on data point, highlight all points in the same cluster and insert the Cluster label in selected_labels list
+        """
         thisline = event.artist
 
         line_info = self.legend_dict[str(thisline.get_gid())]
@@ -320,7 +363,6 @@ class Main(QMainWindow, Ui_MainWindow):
 
             #enable buttons
             self.statisticButton.setEnabled(True)
-            self.onoffButton.setEnabled(True)
 
             self.deleteButton.setEnabled(True)
         else:
@@ -339,8 +381,8 @@ class Main(QMainWindow, Ui_MainWindow):
         #update drawing
         self.canvas[0].draw_idle()
 
-    #for the point under the mousecursor show its position in the cluster
     def onHover(self, event):
+        """ shows timestep of point under cursor """
         #find the line object we are hovering over
         for line in self.ax1f1.get_lines():
             if line.contains(event)[0]:
@@ -400,7 +442,6 @@ class Main(QMainWindow, Ui_MainWindow):
             self.selected_labels = []
             self.annotated_point = None
             self.statisticButton.setEnabled(False)
-            self.onoffButton.setEnabled(False)
             self.deleteButton.setEnabled(False)
             self.labelButton.setEnabled(False)
 
@@ -437,7 +478,7 @@ class Main(QMainWindow, Ui_MainWindow):
         clusters_orig = libCluster.labelPoints(self.data[start:len(self.data)-end], self.label_indices[start:len(self.label_indices)-end])
         self.distance_matrix = libCluster.calcDistMatrix(clusters_orig)
 
-        if self.label_indices:
+        if self.label_indices != None:
             self.clusters = libCluster.labelPoints(mds_data, self.label_indices[start:len(self.label_indices)-end])
             self.plotLabel(self.clusters)
         else:
@@ -446,7 +487,11 @@ class Main(QMainWindow, Ui_MainWindow):
             self.plotLabel(self.clusters)
         self.labelButton.setEnabled(True)
         self.statisticButton.setEnabled(True)
-        self.onoffButton.setEnabled(True)
+
+    def Recalculate(self):
+        self.rmmpl()
+        self.calcMDS(self.data)
+
 
     def deleteCluster(self):
         """
@@ -502,9 +547,16 @@ class Main(QMainWindow, Ui_MainWindow):
 
     #shows a plot with the discrimination values
     def showStatistics(self):
+        """
+        calculates p-value discriminations
+        calculates p-value discriminations for each per of selected clusters using a Pseudo Statisic Method in the background
+        Creates new libStatistic Object
+        """
 
 
         assert self.clusters, "statistics functionality needs already labeled clusters"
+
+
 
         if len(self.selected_labels) == len(self.clusters) or len(self.selected_labels) == 0:
                 statistics = libStatistic.Statistic(list(self.clusters.keys()), self.distance_matrix, self, self.options)
@@ -520,8 +572,8 @@ class Main(QMainWindow, Ui_MainWindow):
 
 
 
-    #callback function for rotation button
     def doRotation(self, rotate):
+        """callback function for rotation button"""
         #makes only sense if there is already a plot
         if len(self.canvas) > 0:
             start = self.options.offset_start
@@ -537,38 +589,18 @@ class Main(QMainWindow, Ui_MainWindow):
             self.rmmpl()
             self.plotLabel(self.clusters)
 
-    def remove_timestamps(self):
-        if not self.clusters:
-            self.errDialog("Please open datafile first")
-
-        filename, _ = QFileDialog.getOpenFileName(self, 'Open File', os.getenv('HOME'))
-        try:
-            with open(filename) as file:
-               onoff= list((filter(None, (line.rstrip() for line in file))))
-        except IOError:
-             self.errDialog(str("Could not Open" + filename))
-             return
-        if len(onoff) > 2:
-             self.errDialog("only start and end timestamp are supported")
-             return
-
-        start = int(onoff[0])
-        if len(onoff) == 2:
-            end = int(onoff[1])
-        if start > self.data.shape[0] or end > self.data.shape[0]:
-            self.errDialog("timestamp exceeds nr of points")
-            return
-        self.rmmpl()
-        self.data = self.data[start:len(self.data) - end]
-        self.label_indices = self.label_indices[start:len(self.label_indices)-end]
-        self.time_offset = start
-        self.calcMDS(self.data)
-
     def showOptions(self):
+        """ Opens Options Window"""
         rotate = self.options.rotate
         self.options.show()
 
     def mdsException(self, err_msg):
+        """ Opens an Error Dialog with a Message
+        Parameters
+        ----------
+        err_msg: string
+            Message to be displayed
+        """
         self.errDialog(err_msg)
 
         #remove progress bar
@@ -578,16 +610,25 @@ class Main(QMainWindow, Ui_MainWindow):
             self.progressBar = None
 
 
-
-
-
-
-
-
-
-
-#Worker thread for calculation, so that the ui doesnt freeze and we can show a progress bar
 class WorkerThread(QtCore.QThread):
+    """ Worker Thread for background MDS calculation
+    Parameters
+    ---------
+    data: array-like
+        high dimensional data to be transformed into low dimensional space
+
+    Results
+    -------
+    mds_data: array-like
+        MDS transformed low dimensional data
+
+    SIGNALS
+    -------
+    finished(data):
+        upon successful calculation calls Main.callbackFunction with transformed data
+    exception(msg):
+        on error calls Main.mdsException with an error message
+    """
     finished = QtCore.pyqtSignal('PyQt_PyObject')
     exception = QtCore.pyqtSignal('PyQt_PyObject')
 
@@ -617,15 +658,40 @@ class WorkerThread(QtCore.QThread):
         self.exit()
 
 class Options(QOptions, Ui_Options):
+    """
+    Qt Class for Displaying Options and storing them
+
+    Attributes
+    ----------
+    rotate: bool
+        Whether to use PCA Transform to normalize Rotation aling Principal Axis
+
+    permutations: int
+        How many permutations the p-Value Statistic Calculation should use
+
+    offset_start / offset_end: int
+
+    SIGNALS
+    ------
+    doRotation(rotate)
+        calls Main.doRotation with bool value rotate
+    doRecalculate()
+        calls Main.Recalculate when changed Options require Recalculation of MDS
+
+    """
+
+
     rotate = False
     permutations = 10000
     offset_start = 0
     offset_end = 0
-    exclude_labels = []
 
+    #Signals for communicating with main thread
     doRotation = QtCore.pyqtSignal('PyQt_PyObject')
-    recalculate = QtCore.pyqtSignal('PyQt_PyObject')
+    doRecalculate = QtCore.pyqtSignal()
+
     def __init__(self, ):
+        """Initialize Elements"""
         super(Options, self).__init__()
         self.setupUi(self)
         self.buttonBox.accepted.connect(self.setValues)
@@ -633,6 +699,7 @@ class Options(QOptions, Ui_Options):
         self.rotate = self.ck_rotate.isChecked()
         self.permutations = int(self.text_permutations.text())
     def setValues(self):
+        """Executed when OK is pressed"""
         recalculate = False
 
         if self.offset_start != int(self.text_offset_start.text()) or self.offset_end != int(self.text_offset_end.text()):
@@ -643,15 +710,18 @@ class Options(QOptions, Ui_Options):
         self.permutations = int(self.text_permutations.text())
         self.offset_start = int(self.text_offset_start.text())
         self.offset_end = int(self.text_offset_end.text())
-        self.exclude_labels = self.text_exclude_labels.split(',')
+        if (recalculate):
+            self.doRecalculate.emit()
+
 
 
     def restoreValues(self):
+        """Reverses Options after Cancel is pressed"""
+
         self.ck_rotate.setChecked(self.rotate)
         self.text_permutations.setText(str(self.permutations))
         self.text_offset_start.setText(str(self.offset_start))
         self.text_offset_end.setText(str(self.offset_end))
-        self.text_exclude_labels.setText(','.join(self.exclude_labels))
 
 
 
@@ -660,7 +730,6 @@ class Options(QOptions, Ui_Options):
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     main = Main()
-
     main.show()
     sys.exit(app.exec_())
 

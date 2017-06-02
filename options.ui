@@ -125,38 +125,6 @@
     <string>Offset Start</string>
    </property>
   </widget>
-  <widget class="QLineEdit" name="text_exclude_labels">
-   <property name="geometry">
-    <rect>
-     <x>130</x>
-     <y>110</y>
-     <width>113</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="toolTip">
-    <string notr="true">labels to be excluded seperated by &quot;;&quot;</string>
-   </property>
-   <property name="text">
-    <string/>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_3">
-   <property name="geometry">
-    <rect>
-     <x>20</x>
-     <y>110</y>
-     <width>101</width>
-     <height>18</height>
-    </rect>
-   </property>
-   <property name="toolTip">
-    <string>labels to be excluded seperated by &quot;;&quot;</string>
-   </property>
-   <property name="text">
-    <string>Exclude Label</string>
-   </property>
-  </widget>
   <widget class="QLabel" name="label_4">
    <property name="geometry">
     <rect>
