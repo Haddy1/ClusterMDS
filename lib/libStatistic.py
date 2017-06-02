@@ -40,7 +40,6 @@ class Statistic(QFrame):
         self.options = options
         self.initUi()
 
-        print (self.permutations)
         self.startCalculation()
 
     def startCalculation(self):
